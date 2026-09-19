@@ -5,14 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.signaldesk.demo"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B1220",
+        "backgroundColor": "#17281C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -24,12 +24,18 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "backgroundColor": "#0B1220",
-    "primaryColor": "#60A5FA",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#0B1220",
-      "image": "./assets/splash-icon.png"
-    }
+    "backgroundColor": "#17351F",
+    "primaryColor": "#17281C",
+    "plugins": [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#17351F",
+          "image": "./assets/splash-blank.png",
+          "imageWidth": 200
+        }
+      ]
+    ]
   }
 }
