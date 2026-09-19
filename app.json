@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Signal Desk",
+    "slug": "signal-desk",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.signaldesk.demo"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1220",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.signaldesk.demo",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "backgroundColor": "#0B1220",
+    "primaryColor": "#60A5FA",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0B1220",
+      "image": "./assets/splash-icon.png"
+    }
+  }
+}
