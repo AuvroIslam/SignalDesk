@@ -1,134 +1,161 @@
-import React, { useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient, Path, Polyline, Stop } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
-import { colors, radius, spacing, typography } from '../theme/colors';
+import { colors, motion, radius, spacing } from '../theme/colors';
+import { type } from '../theme/type';
 
 type Props = {
-  /** Seven invented numbers from the trade record. Nothing else feeds this chart. */
+  /** Seven invented numbers from the trade record. Nothing else feeds this. */
   series: number[];
-  tint?: string;
+  tint: string;
 };
 
-const CHART_HEIGHT = 112;
-const PAD_X = 6;
-const PAD_Y = 10;
+const PLOT_HEIGHT = 132;
+const BAR_WIDTH = 22;
 const DAY_LABELS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
 
 /**
- * A fictional seven-point activity line.
+ * A fictional seven-point activity chart.
  *
- * The numbers are an invented "activity index" stored on the trade record — they
- * are not prices, volumes or any real series — so the component is labelled as
- * mock data and deliberately carries no axis values that could read as currency.
+ * Drawn as pill-shaped bars that brighten as they rise, echoing the three
+ * ascending bars in the app mark. The numbers are an invented activity index
+ * stored on the trade record — not prices or volumes — so the card is labelled
+ * as mock data and carries no numeric axis that could read as currency.
  */
-export function MockActivityChart({ series, tint = colors.chartLine }: Props) {
-  const [width, setWidth] = useState(0);
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    setWidth(event.nativeEvent.layout.width);
-  };
-
+export function MockActivityChart({ series, tint }: Props) {
   const min = Math.min(...series);
   const max = Math.max(...series);
   const span = max - min || 1;
 
-  const innerWidth = Math.max(width - PAD_X * 2, 1);
-  const innerHeight = CHART_HEIGHT - PAD_Y * 2;
-  const step = series.length > 1 ? innerWidth / (series.length - 1) : 0;
-
-  const points = series.map((value, index) => ({
-    x: PAD_X + index * step,
-    y: PAD_Y + innerHeight - ((value - min) / span) * innerHeight,
-  }));
-
-  const polyline = points.map((p) => `${p.x},${p.y}`).join(' ');
-  const areaPath =
-    points.length > 0
-      ? `M ${points[0].x} ${points[0].y} ` +
-        points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ') +
-        ` L ${points[points.length - 1].x} ${CHART_HEIGHT} L ${points[0].x} ${CHART_HEIGHT} Z`
-      : '';
-
-  const last = points[points.length - 1];
-
   return (
-    <View style={styles.wrap}>
+    <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>Mock 7-day activity</Text>
         <Text style={styles.subtitle}>Invented index — not price or volume data</Text>
       </View>
 
       <View
-        onLayout={onLayout}
-        style={styles.canvas}
+        style={styles.plot}
         accessibilityRole="image"
         accessibilityLabel={`Mock seven day activity chart. Invented index values from ${min} to ${max}. Demonstration only.`}
       >
-        {width > 0 && (
-          <Svg width={width} height={CHART_HEIGHT}>
-            <Defs>
-              <LinearGradient id="mockFill" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={tint} stopOpacity={0.28} />
-                <Stop offset="1" stopColor={tint} stopOpacity={0} />
-              </LinearGradient>
-            </Defs>
+        {[0.33, 0.66].map((ratio) => (
+          <View key={ratio} style={[styles.gridLine, { bottom: PLOT_HEIGHT * ratio }]} />
+        ))}
 
-            {[0.25, 0.5, 0.75].map((ratio) => (
-              <Line
-                key={ratio}
-                x1={0}
-                y1={PAD_Y + innerHeight * ratio}
-                x2={width}
-                y2={PAD_Y + innerHeight * ratio}
-                stroke={colors.chartGrid}
-                strokeWidth={1}
+        <View style={styles.bars}>
+          {series.map((value, index) => {
+            // Floor at 18% so the smallest day is still a visible pill.
+            const ratio = 0.18 + ((value - min) / span) * 0.82;
+            return (
+              <Bar
+                key={index}
+                heightPx={PLOT_HEIGHT * ratio}
+                intensity={ratio}
+                tint={tint}
+                index={index}
               />
-            ))}
-
-            <Path d={areaPath} fill="url(#mockFill)" />
-            <Polyline
-              points={polyline}
-              fill="none"
-              stroke={tint}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {last && (
-              <>
-                <Circle cx={last.x} cy={last.y} r={6} fill={tint} opacity={0.25} />
-                <Circle cx={last.x} cy={last.y} r={3.5} fill={tint} />
-              </>
-            )}
-          </Svg>
-        )}
+            );
+          })}
+        </View>
       </View>
 
-      <View style={styles.axis}>
+      <Animated.View entering={FadeIn.delay(520)} style={styles.axis}>
         {DAY_LABELS.map((label) => (
           <Text key={label} style={styles.axisLabel}>
             {label}
           </Text>
         ))}
-      </View>
+      </Animated.View>
     </View>
   );
 }
 
+function Bar({
+  heightPx,
+  intensity,
+  tint,
+  index,
+}: {
+  heightPx: number;
+  intensity: number;
+  tint: string;
+  index: number;
+}) {
+  const grow = useSharedValue(0);
+
+  React.useEffect(() => {
+    grow.value = withDelay(120 + index * 55, withSpring(1, motion.gentle));
+  }, [grow, index]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: grow.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.barWrap, { height: heightPx }, animatedStyle]}>
+      <LinearGradient
+        colors={[withAlpha(tint, 0.45 + intensity * 0.35), tint]}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 0, y: 0 }}
+        style={styles.bar}
+      />
+    </Animated.View>
+  );
+}
+
+/** Applies alpha to a #RRGGBB token without pulling in a colour library. */
+function withAlpha(hex: string, alpha: number): string {
+  const v = hex.replace('#', '');
+  const r = parseInt(v.slice(0, 2), 16);
+  const g = parseInt(v.slice(2, 4), 16);
+  const b = parseInt(v.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+}
+
 const styles = StyleSheet.create({
-  wrap: {
+  card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     padding: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  header: { gap: 2 },
-  title: { ...typography.body, fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  subtitle: { fontSize: 11, fontWeight: '500', color: colors.textMuted },
-  canvas: { width: '100%', height: CHART_HEIGHT },
+  header: { gap: 3 },
+  title: { ...type.title2, color: colors.ink },
+  subtitle: { ...type.footnote, color: colors.inkTertiary },
+
+  plot: { height: PLOT_HEIGHT, justifyContent: 'flex-end' },
+  gridLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.hairline,
+  },
+  bars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: PLOT_HEIGHT,
+  },
+  barWrap: {
+    width: BAR_WIDTH,
+    borderRadius: BAR_WIDTH / 2,
+    overflow: 'hidden',
+    transformOrigin: 'bottom',
+  },
+  bar: { flex: 1, borderRadius: BAR_WIDTH / 2 },
+
   axis: { flexDirection: 'row', justifyContent: 'space-between' },
-  axisLabel: { fontSize: 10, fontWeight: '600', color: colors.textMuted },
+  axisLabel: {
+    ...type.caption,
+    fontSize: 11,
+    color: colors.inkTertiary,
+    width: BAR_WIDTH,
+    textAlign: 'center',
+  },
 });

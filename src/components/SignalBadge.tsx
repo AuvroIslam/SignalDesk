@@ -1,50 +1,62 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, typography } from '../theme/colors';
+import { colors, radius, spacing, strengthStyle } from '../theme/colors';
+import { type } from '../theme/type';
 import type { SignalStrength } from '../types/trade';
 
 type Props = {
   strength: SignalStrength;
-  /** Optional signal name shown next to the strength, e.g. "Cluster Buy". */
-  label?: string;
+  /** Render for a dark green surface instead of a light one. */
+  onHero?: boolean;
 };
 
 /**
- * Strength is a neutral interface label describing how prominent a demo filing
- * is in this feed — not a rating, score or recommendation. The three tints are
- * intentionally analytic (violet / blue / grey) rather than green-vs-red, so
- * strength is never confused with the purchase-vs-sale direction.
+ * Strength shown as contrast, not colour.
+ *
+ * High is a solid ink pill, Medium a soft grey fill, Low a hairline outline.
+ * Nothing here borrows the purchase/sale palette, so prominence in the feed is
+ * never readable as a recommendation.
  */
-const TINTS: Record<SignalStrength, { fg: string; bg: string }> = {
-  High: { fg: colors.accentAlt, bg: colors.accentAltSoft },
-  Medium: { fg: colors.accent, bg: colors.accentSoft },
-  Low: { fg: colors.textMuted, bg: 'rgba(132, 150, 178, 0.14)' },
-};
+export function SignalBadge({ strength, onHero = false }: Props) {
+  const tone = strengthStyle[strength];
 
-export function SignalBadge({ strength, label }: Props) {
-  const tint = TINTS[strength];
+  if (onHero) {
+    const heroTone = {
+      High: { bg: colors.onHero, fg: colors.ink },
+      Medium: { bg: 'rgba(255,255,255,0.16)', fg: colors.onHero },
+      Low: { bg: 'transparent', fg: colors.onHeroTertiary },
+    }[strength];
+
+    return (
+      <View
+        style={[
+          styles.badge,
+          {
+            backgroundColor: heroTone.bg,
+            borderColor: strength === 'Low' ? colors.heroBorder : 'transparent',
+          },
+        ]}
+      >
+        <Text style={[styles.label, { color: heroTone.fg }]}>{strength}</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.badge, { backgroundColor: tint.bg }]}>
-      <View style={[styles.dot, { backgroundColor: tint.fg }]} />
-      <Text style={[styles.text, { color: tint.fg }]} numberOfLines={1}>
-        {label ? `${strength} · ${label}` : strength}
-      </Text>
+    <View style={[styles.badge, { backgroundColor: tone.bg, borderColor: tone.border }]}>
+      <Text style={[styles.label, { color: tone.fg }]}>{strength}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: 6,
-    paddingVertical: 5,
-    paddingHorizontal: spacing.xs,
     borderRadius: radius.pill,
-    flexShrink: 1,
+    borderWidth: 1,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  text: { ...typography.micro, flexShrink: 1 },
+  label: { ...type.caption, fontSize: 10 },
 });
