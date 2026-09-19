@@ -352,11 +352,15 @@ signed with a debug keystore.
 
 Every tool used on this project, and what each was actually used for.
 
+**Understanding the brief (mine, with ChatGPT).** I read the assignment guide through once myself,
+then used **ChatGPT** to break it down into a clearer view of the required project structure and
+the constraints, so that nothing in the specification was missed before any code was written.
+
 **Design and UX direction (mine).** I designed the UI and UX. I researched mobile patterns on
-**Mobbin** and **Dribbble**, then used **ChatGPT** to turn a written brief into a reference mockup
-of the three screens. That mockup became the visual reference I handed to Claude Code to build
-from, followed by manual tweaking of layout, colour and motion until the app felt lively rather
-than static.
+**Mobbin** and **Dribbble**, then used ChatGPT again to turn a written brief into a reference
+mockup of the three screens. That mockup became the visual reference I handed to Claude Code to
+build from, followed by manual tweaking of layout, colour and motion until the app felt lively
+rather than static.
 
 **Implementation (Claude Code, Anthropic).** Claude Code did the heavy lifting on the codebase:
 scaffolding the Expo and TypeScript project, writing the screens, components, mock data, filter
