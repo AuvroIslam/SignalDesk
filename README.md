@@ -270,13 +270,26 @@ verbatim disclaimer, and a check that no explanatory copy contains advisory lang
 |---|---|---|---|---|---|---|---|---|---|
 | results | 12 | 7 | 5 | 3 | 3 | 4 | 12 | 8 | 4 |
 
-### Manual testing on a physical device
+### Manual testing on two physical devices
 
-The release APK was installed on a physical **Samsung Galaxy S21 FE 5G (Android 14)** and tested
-by hand over **wireless debugging (ADB over Wi-Fi)**. The UI automation and log inspection during
-that session were driven with the assistance of **Claude (AI)**, which installed builds, walked the
-screens, captured screenshots and read `logcat`, while the behaviour was checked against the
-brief's requirements. **49 of 49 checks passed:**
+The release APK was installed and tested by hand on **two phones running different Android
+versions**, both over **wireless debugging (ADB over Wi-Fi)**:
+
+| Device | Android | Screen | Result |
+|---|---|---|---|
+| Samsung Galaxy S21 FE 5G | 14 (API 34) | 1080×2340, 411×891 dp | all checks passed |
+| Google Pixel 10a | 17 (API 37) | 1080×2424, 411×924 dp | all checks passed |
+
+Testing across two API levels three versions apart, and two screen heights, was what confirmed the
+layout holds up: nothing in the app uses a fixed height, so the taller Pixel simply shows more of
+the feed. It also caught a real defect. Home sets a light status bar for the dark green hero, and
+on the Pixel it was visible that the bar never switched back once the page scrolled into the white
+body, leaving white icons on a white background. The status bar now follows scroll position.
+
+The UI automation and log inspection during both sessions were driven with the assistance of
+**Claude (AI)**, which installed builds, walked the screens, captured screenshots and read
+`logcat`, while the behaviour was checked against the brief's requirements. **49 of 49 checks
+passed on each device:**
 
 - Launches straight to Market Pulse. `logcat` reports **zero error level entries** for the process.
 - Home shows the search entry, three summaries, top signals, four latest cards, CTA and footnote.
@@ -341,8 +354,9 @@ signed with a debug keystore.
 - The 7 day chart is a static invented series per record. It is not interactive and has no axis
   values, because labelled values would invite reading it as real market data.
 - Filter and sort state are not persisted across launches.
-- Tested on a physical Samsung Galaxy S21 FE 5G (Android 14). The iOS layout uses the same safe
-  area aware code but was **not verified on an iOS device**.
+- Tested on two physical Android phones, a Samsung Galaxy S21 FE 5G on Android 14 and a Google
+  Pixel 10a on Android 17. The iOS layout uses the same safe area aware code but was **not
+  verified on an iOS device**.
 - `assets/splash-blank.png` is an intentionally transparent image. `expo-splash-screen` always
   writes a `@drawable/splashscreen_logo` reference into `styles.xml` but only generates that
   drawable when an `image` is supplied, so omitting it fails resource linking. The transparent
@@ -368,11 +382,12 @@ logic, the generated icon set and this README. I have practical React Native and
 having worked as a teaching assistant on the Ostad React Native Expo batch, so I guided the work,
 reviewed the output at each step and corrected it where it went in the wrong direction.
 
-**Testing (shared).** I tested the app by hand on my own Samsung Galaxy S21 FE and checked the
-behaviour against the brief's requirements myself. Claude then ran the checklist again over
-wireless debugging, capturing screenshots and reading `logcat`, and carried out the security
-review: the permission audit, the dependency audit, and the source scans for network calls,
-secrets and dynamic code execution.
+**Testing (shared).** I tested the app by hand on two phones, a Samsung Galaxy S21 FE on Android
+14 and a Google Pixel 10a on Android 17, and checked the behaviour against the brief's
+requirements myself. Claude then ran the checklist again on both devices over wireless debugging,
+capturing screenshots and reading `logcat`, and carried out the security review: the permission
+audit, the dependency audit, and the source scans for network calls, secrets and dynamic code
+execution.
 
 No AI generated work was submitted without review. I can explain the architecture, the filter
 logic and the design decisions in the submitted code.
