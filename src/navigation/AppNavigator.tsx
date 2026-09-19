@@ -1,4 +1,4 @@
-import { DarkTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
@@ -18,14 +18,14 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const navigationTheme: Theme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
-    background: colors.background,
-    card: colors.background,
-    text: colors.textPrimary,
-    border: colors.border,
-    primary: colors.accent,
+    ...DefaultTheme.colors,
+    background: colors.canvas,
+    card: colors.surface,
+    text: colors.ink,
+    border: colors.hairline,
+    primary: colors.ink,
   },
 };
 
@@ -40,7 +40,7 @@ export function AppNavigator() {
         initialRouteName="Home"
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
+          contentStyle: { backgroundColor: colors.canvas },
           animation: 'slide_from_right',
         }}
       >

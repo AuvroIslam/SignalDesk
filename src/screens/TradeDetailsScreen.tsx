@@ -1,22 +1,28 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DirectionTag } from '../components/DirectionTag';
+import { Fall, Rise } from '../components/icons/BrandIcons';
+import { Icon } from '../components/icons/Icon';
 import { MockActivityChart } from '../components/MockActivityChart';
+import { PressableScale } from '../components/PressableScale';
 import { SignalBadge } from '../components/SignalBadge';
 import { findTradeById } from '../data/mockTrades';
+import { useStatusBarStyle } from '../hooks/useStatusBarStyle';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { HIT_TARGET, colors, radius, spacing, typography } from '../theme/colors';
+import { HIT_TARGET, colors, radius, spacing } from '../theme/colors';
+import { type } from '../theme/type';
 import { REQUIRED_DISCLAIMER, explainTrade } from '../utils/education';
 import {
+  formatCompactCurrency,
   formatDate,
   formatDateTime,
   formatFullCurrency,
   formatPrice,
   formatShares,
-  formatCompactCurrency,
   tradeTypeLabel,
 } from '../utils/formatters';
 
@@ -25,38 +31,39 @@ type Props = NativeStackScreenProps<RootStackParamList, 'TradeDetails'>;
 export function TradeDetailsScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const trade = findTradeById(route.params.tradeId);
+  useStatusBarStyle('dark');
 
-  const back = (
-    <Pressable
+  const backButton = (
+    <PressableScale
       onPress={() => navigation.goBack()}
+      scaleTo={0.9}
       accessibilityRole="button"
       accessibilityLabel="Go back to the previous screen"
       hitSlop={8}
-      style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+      style={styles.iconButton}
     >
-      <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
-    </Pressable>
+      <Icon name="ChevronLeft" size={20} color={colors.ink} strokeWidth={2.2} />
+    </PressableScale>
   );
 
   // Defensive: the id always resolves from local data, but a missing record
-  // should degrade to a readable screen rather than a red box.
+  // should degrade to a readable screen rather than a crash.
   if (!trade) {
     return (
       <View style={[styles.screen, styles.missing, { paddingTop: insets.top + spacing.md }]}>
-        {back}
+        {backButton}
         <Text style={styles.missingText}>That demo filing is no longer in the local set.</Text>
       </View>
     );
   }
 
   const isPurchase = trade.type === 'purchase';
-  const tint = isPurchase ? colors.purchase : colors.sale;
-  const tintSoft = isPurchase ? colors.purchaseSoft : colors.saleSoft;
-  const typeLabel = tradeTypeLabel(trade.type);
+  const tint = isPurchase ? colors.positive : colors.negative;
+  const tintSoft = isPurchase ? colors.positiveSoft : colors.negativeSoft;
 
   const rows: { label: string; value: string }[] = [
     { label: 'Insider', value: `${trade.insider} · ${trade.role}` },
-    { label: 'Transaction', value: `${typeLabel} · Code ${trade.transactionCode}` },
+    { label: 'Transaction', value: `${tradeTypeLabel(trade.type)} · Code ${trade.transactionCode}` },
     { label: 'Shares', value: formatShares(trade.shares) },
     { label: 'Price per share', value: `${formatPrice(trade.pricePerShare)} (demo)` },
     { label: 'Total value', value: `${formatFullCurrency(trade.value)} (demo)` },
@@ -66,171 +73,176 @@ export function TradeDetailsScreen({ navigation, route }: Props) {
   ];
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.xxl },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        {back}
-        <View style={styles.headerText}>
-          <Text style={styles.company} numberOfLines={2}>
-            {trade.company}
-          </Text>
-          <Text style={styles.identifiers} numberOfLines={1}>
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.xs }]}>{backButton}</View>
+
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View entering={FadeInDown.duration(420).springify().damping(18)} style={styles.titleBlock}>
+          <Text style={styles.company}>{trade.company}</Text>
+          <Text style={styles.identifiers}>
             {trade.ticker} · {trade.sector}
           </Text>
-        </View>
-      </View>
-
-      <View style={styles.demoBadge}>
-        <Ionicons name="information-circle-outline" size={13} color={colors.accentAlt} />
-        <Text style={styles.demoBadgeText}>FICTIONAL DEMO DATA</Text>
-      </View>
-
-      <View style={[styles.signalCard, { borderColor: tint, backgroundColor: tintSoft }]}>
-        <View style={styles.signalTopRow}>
-          <Ionicons
-            name={isPurchase ? 'arrow-up-circle' : 'arrow-down-circle'}
-            size={20}
-            color={tint}
-          />
-          <Text style={[styles.signalName, { color: tint }]} numberOfLines={2}>
-            {trade.signal}
-          </Text>
-        </View>
-        <Text style={styles.signalValue}>
-          {formatCompactCurrency(trade.value)} fictional demo insider{' '}
-          {isPurchase ? 'buy' : 'sale'}
-        </Text>
-        <SignalBadge strength={trade.signalStrength} />
-      </View>
-
-      <View style={styles.specCard}>
-        {rows.map((row, index) => (
-          <View
-            key={row.label}
-            style={[styles.specRow, index < rows.length - 1 && styles.specRowDivided]}
-          >
-            <Text style={styles.specLabel}>{row.label}</Text>
-            <Text style={styles.specValue} numberOfLines={2}>
-              {row.value}
-            </Text>
+          <View style={styles.demoBadge}>
+            <Text style={styles.demoBadgeText}>Fictional demo data</Text>
           </View>
-        ))}
-      </View>
+        </Animated.View>
 
-      <MockActivityChart series={trade.activitySeries} tint={tint} />
+        <Animated.View
+          entering={FadeInDown.delay(60).duration(420).springify().damping(18)}
+          style={[styles.signalCard, { backgroundColor: tintSoft }]}
+        >
+          <View style={styles.signalTop}>
+            <View style={[styles.signalIcon, { backgroundColor: tint }]}>
+              {isPurchase ? <Rise size={21} color="#FFFFFF" /> : <Fall size={21} color="#FFFFFF" />}
+            </View>
+            <View style={styles.signalTextBlock}>
+              <Text style={[styles.signalName, { color: tint }]} numberOfLines={2}>
+                {trade.signal}
+              </Text>
+              <Text style={styles.signalValue}>
+                {formatCompactCurrency(trade.value)} fictional demo insider{' '}
+                {isPurchase ? 'buy' : 'sale'}
+              </Text>
+            </View>
+            <SignalBadge strength={trade.signalStrength} />
+          </View>
 
-      <View style={styles.educationCard}>
-        <Text style={styles.educationTitle}>Why this matters</Text>
-        <Text style={styles.educationBody}>{explainTrade(trade)}</Text>
-      </View>
+          <View style={styles.signalFooter}>
+            <DirectionTag direction={trade.type} variant="pill" />
+          </View>
+        </Animated.View>
 
-      <View style={styles.disclaimerCard}>
-        <Ionicons name="alert-circle-outline" size={16} color={colors.textMuted} />
-        <Text style={styles.disclaimerText}>{REQUIRED_DISCLAIMER}</Text>
-      </View>
-    </ScrollView>
+        <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.specCard}>
+          {rows.map((row, index) => (
+            <View key={row.label} style={[styles.specRow, index < rows.length - 1 && styles.specDivider]}>
+              <Text style={styles.specLabel}>{row.label}</Text>
+              <Text style={styles.specValue} numberOfLines={2}>
+                {row.value}
+              </Text>
+            </View>
+          ))}
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(180).duration(420)}>
+          <MockActivityChart series={trade.activitySeries} tint={tint} />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(240).duration(420)} style={styles.educationCard}>
+          <View style={styles.educationHead}>
+            <Icon name="Info" size={18} color={colors.ink} strokeWidth={1.9} />
+            <Text style={styles.educationTitle}>Why this matters</Text>
+          </View>
+          <Text style={styles.educationBody}>{explainTrade(trade)}</Text>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(300).duration(420)} style={styles.disclaimerCard}>
+          <Icon name="Warning" size={17} color={colors.inkTertiary} strokeWidth={1.9} />
+          <Text style={styles.disclaimerText}>{REQUIRED_DISCLAIMER}</Text>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.md, gap: spacing.md },
+  screen: { flex: 1, backgroundColor: colors.canvas },
+  header: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xs },
+  content: { paddingHorizontal: spacing.lg, gap: spacing.md },
 
-  missing: { alignItems: 'flex-start', gap: spacing.md, paddingHorizontal: spacing.md },
-  missingText: { ...typography.body, color: colors.textSecondary },
+  missing: { alignItems: 'flex-start', gap: spacing.md, paddingHorizontal: spacing.lg },
+  missingText: { ...type.body, color: colors.inkSecondary },
 
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  backButton: {
+  iconButton: {
     width: HIT_TARGET,
     height: HIT_TARGET,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: HIT_TARGET / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+  },
+
+  titleBlock: { gap: spacing.xxs },
+  company: { ...type.title1, color: colors.ink },
+  identifiers: { ...type.footnote, color: colors.inkSecondary },
+  demoBadge: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.sunken,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+  },
+  demoBadgeText: { ...type.overline, color: colors.inkSecondary },
+
+  signalCard: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+  signalTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  signalIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButtonPressed: { backgroundColor: colors.surfaceAlt },
-  headerText: { flex: 1, minWidth: 0, gap: 2 },
-  company: { ...typography.title, fontSize: 20, color: colors.textPrimary },
-  identifiers: { fontSize: 12, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.3 },
-
-  demoBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 5,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentAltSoft,
-    borderWidth: 1,
-    borderColor: colors.accentAlt,
-  },
-  demoBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, color: colors.accentAlt },
-
-  signalCard: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.md, gap: spacing.xs },
-  signalTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  signalName: { flex: 1, minWidth: 0, fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
-  signalValue: { fontSize: 15, fontWeight: '600', color: colors.textPrimary, lineHeight: 21 },
+  signalTextBlock: { flex: 1, minWidth: 0, gap: 2 },
+  signalName: { ...type.title2, fontSize: 17 },
+  signalValue: { ...type.footnote, color: colors.ink },
+  signalFooter: { flexDirection: 'row' },
 
   specCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     paddingHorizontal: spacing.md,
   },
   specRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 1,
   },
-  specRowDivided: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  specLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted, flexShrink: 0 },
+  specDivider: { borderBottomWidth: 1, borderBottomColor: colors.hairline },
+  specLabel: { ...type.body, fontSize: 14, color: colors.inkSecondary, flexShrink: 0 },
   specValue: {
     flex: 1,
     minWidth: 0,
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    ...type.headline,
+    fontSize: 14.5,
+    color: colors.ink,
     textAlign: 'right',
   },
 
   educationCard: {
-    backgroundColor: colors.backgroundLift,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     padding: spacing.md,
     gap: spacing.xs,
   },
-  educationTitle: { ...typography.body, fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  educationBody: { fontSize: 13, fontWeight: '500', color: colors.textSecondary, lineHeight: 20 },
+  educationHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  educationTitle: { ...type.title2, fontSize: 17, color: colors.ink },
+  educationBody: { ...type.body, fontSize: 14, color: colors.inkSecondary },
 
   disclaimerCard: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    padding: spacing.sm,
+    gap: spacing.sm,
+    padding: spacing.md,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.sunken,
   },
   disclaimerText: {
     flex: 1,
     minWidth: 0,
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.textMuted,
-    lineHeight: 16,
+    ...type.caption,
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: colors.inkTertiary,
   },
 });

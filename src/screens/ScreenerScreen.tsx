@@ -1,60 +1,68 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActiveFilterChip } from '../components/ActiveFilterChip';
 import { FilterChip } from '../components/FilterChip';
+import { FilterSheet } from '../components/FilterSheet';
+import { Icon } from '../components/icons/Icon';
+import { PressableScale } from '../components/PressableScale';
 import { SearchField } from '../components/SearchField';
-import { TradeCard } from '../components/TradeCard';
+import { TradeRow } from '../components/TradeRow';
 import { MOCK_TRADES } from '../data/mockTrades';
+import { useStatusBarStyle } from '../hooks/useStatusBarStyle';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { HIT_TARGET, colors, radius, spacing, typography } from '../theme/colors';
-import type {
-  InsiderTrade,
-  RoleFilter,
-  ScreenerFilters,
-  TypeFilter,
-  ValueFilter,
-} from '../types/trade';
-import { DEFAULT_FILTERS, filterTrades, isNarrowed } from '../utils/filterTrades';
+import { HIT_TARGET, colors, radius, spacing } from '../theme/colors';
+import { type } from '../theme/type';
+import type { InsiderTrade, ScreenerFilters, SortKey, TypeFilter } from '../types/trade';
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_SORT,
+  filterTrades,
+  hiddenFilterCount,
+  isNarrowed,
+} from '../utils/filterTrades';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Screener'>;
 
-const TYPE_OPTIONS: { label: string; value: TypeFilter }[] = [
+/** Transaction type stays inline: it is the filter people reach for first. */
+const QUICK_TYPES: { label: string; value: TypeFilter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Purchases', value: 'purchase' },
   { label: 'Sales', value: 'sale' },
 ];
 
-const ROLE_OPTIONS: { label: string; value: RoleFilter }[] = [
-  { label: 'All roles', value: 'All roles' },
-  { label: 'CEO', value: 'CEO' },
-  { label: 'CFO', value: 'CFO' },
-  { label: 'Director', value: 'Director' },
-];
+const SORT_LABEL: Record<SortKey, string> = {
+  recent: 'Newest',
+  value: 'Largest',
+};
 
-const VALUE_OPTIONS: { label: string; value: ValueFilter }[] = [
-  { label: 'Any', value: 0 },
-  { label: '$100K+', value: 100_000 },
-  { label: '$500K+', value: 500_000 },
-  { label: '$1M+', value: 1_000_000 },
-];
+/** Human-readable name for an active value threshold. */
+const VALUE_LABEL: Record<number, string> = {
+  100000: '$100K+',
+  500000: '$500K+',
+  1000000: '$1M+',
+};
 
 export function ScreenerScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const autoFocusSearch = route.params?.autoFocusSearch ?? false;
+  useStatusBarStyle('dark');
 
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<ScreenerFilters>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const isFiltered = isNarrowed(query, filters);
+  const results = useMemo(
+    () => filterTrades(MOCK_TRADES, query, filters, sort),
+    [query, filters, sort],
+  );
 
-  /**
-   * Search and all three filter groups are applied together against the local
-   * array. Nothing is fetched; the whole screener is a pure derivation of state.
-   */
-  const results = useMemo(() => filterTrades(MOCK_TRADES, query, filters), [query, filters]);
+  const narrowed = isNarrowed(query, filters);
+  const hiddenCount = hiddenFilterCount(filters);
 
   const clearAll = () => {
     setQuery('');
@@ -64,58 +72,38 @@ export function ScreenerScreen({ navigation, route }: Props) {
   const openDetails = (trade: InsiderTrade) =>
     navigation.navigate('TradeDetails', { tradeId: trade.id });
 
-  const renderFilterRow = <T,>(
-    title: string,
-    options: { label: string; value: T }[],
-    selected: T,
-    onSelect: (value: T) => void,
-    hint?: string,
-  ) => (
-    <View style={styles.filterGroup}>
-      <Text style={styles.filterTitle}>{title}</Text>
-      <View style={styles.chipRow}>
-        {options.map((option) => (
-          <FilterChip
-            key={String(option.value)}
-            label={option.label}
-            selected={selected === option.value}
-            onPress={() => onSelect(option.value)}
-          />
-        ))}
-      </View>
-      {hint ? <Text style={styles.filterHint}>{hint}</Text> : null}
-    </View>
-  );
-
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={[styles.screen, { paddingTop: insets.top + spacing.xs }]}>
       <View style={styles.header}>
-        <Pressable
+        <PressableScale
           onPress={() => navigation.goBack()}
+          scaleTo={0.9}
           accessibilityRole="button"
           accessibilityLabel="Go back to Market Pulse"
           hitSlop={8}
-          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+          style={styles.iconButton}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
-        </Pressable>
+          <Icon name="ChevronLeft" size={20} color={colors.ink} strokeWidth={2.2} />
+        </PressableScale>
+
         <View style={styles.headerText}>
-          <Text style={styles.heading}>Latest Trades</Text>
-          <Text style={styles.subheading}>Search and filter the fictional demo feed</Text>
+          <Text style={styles.title}>Latest Trades</Text>
+          <Text style={styles.subtitle}>Search and filter the fictional demo feed</Text>
         </View>
+
+        <View style={styles.iconButtonGhost} />
       </View>
 
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TradeCard trade={item} onPress={openDetails} />}
+        renderItem={({ item, index }) => (
+          <TradeRow trade={item} onPress={openDetails} detailed index={index} />
+        )}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: insets.bottom + spacing.xxl },
-        ]}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing.xxl }]}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.xs }} />}
         ListHeaderComponent={
           <View style={styles.controls}>
             <SearchField
@@ -126,153 +114,227 @@ export function ScreenerScreen({ navigation, route }: Props) {
               autoFocus={autoFocusSearch}
             />
 
-            {renderFilterRow('TRANSACTION TYPE', TYPE_OPTIONS, filters.type, (value) =>
-              setFilters((prev) => ({ ...prev, type: value })),
-            )}
+            <View style={styles.quickRow}>
+              {QUICK_TYPES.map((option) => (
+                <FilterChip
+                  key={option.value}
+                  label={option.label}
+                  selected={filters.type === option.value}
+                  onPress={() => setFilters((prev) => ({ ...prev, type: option.value }))}
+                />
+              ))}
 
-            {renderFilterRow(
-              'INSIDER ROLE',
-              ROLE_OPTIONS,
-              filters.role,
-              (value) => setFilters((prev) => ({ ...prev, role: value })),
-              'Officer-level demo filings appear under "All roles".',
-            )}
+              <PressableScale
+                onPress={() => setSheetOpen(true)}
+                scaleTo={0.94}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  hiddenCount > 0
+                    ? `Open filters, ${hiddenCount} active`
+                    : 'Open filters'
+                }
+                style={[styles.filterButton, hiddenCount > 0 && styles.filterButtonActive]}
+              >
+                <Icon
+                  name="Sliders"
+                  size={16}
+                  color={hiddenCount > 0 ? '#FFFFFF' : colors.inkSecondary}
+                  strokeWidth={2}
+                />
+                <Text
+                  style={[styles.filterButtonText, hiddenCount > 0 && styles.filterButtonTextActive]}
+                >
+                  Filter
+                </Text>
+                {hiddenCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{hiddenCount}</Text>
+                  </View>
+                )}
+              </PressableScale>
+            </View>
 
-            {renderFilterRow('VALUE THRESHOLD', VALUE_OPTIONS, filters.minValue, (value) =>
-              setFilters((prev) => ({ ...prev, minValue: value })),
+            {hiddenCount > 0 && (
+              <View style={styles.activeRow}>
+                {filters.role !== DEFAULT_FILTERS.role && (
+                  <ActiveFilterChip
+                    label={filters.role}
+                    onRemove={() => setFilters((prev) => ({ ...prev, role: DEFAULT_FILTERS.role }))}
+                  />
+                )}
+                {filters.minValue !== DEFAULT_FILTERS.minValue && (
+                  <ActiveFilterChip
+                    label={VALUE_LABEL[filters.minValue]}
+                    onRemove={() =>
+                      setFilters((prev) => ({ ...prev, minValue: DEFAULT_FILTERS.minValue }))
+                    }
+                  />
+                )}
+              </View>
             )}
 
             <View style={styles.resultBar}>
-              <Text style={styles.resultCount}>
+              <Animated.Text key={results.length} entering={FadeIn.duration(200)} style={styles.resultCount}>
                 {results.length} result{results.length === 1 ? '' : 's'}
-              </Text>
-              {isFiltered && (
-                <Pressable
-                  onPress={clearAll}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear search and all filters"
+              </Animated.Text>
+
+              <View style={styles.resultActions}>
+                {narrowed && (
+                  <PressableScale
+                    onPress={clearAll}
+                    scaleTo={0.92}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search and all filters"
+                    style={styles.textAction}
+                  >
+                    <Icon name="Reset" size={14} color={colors.inkSecondary} strokeWidth={2} />
+                    <Text style={styles.textActionLabel}>Clear</Text>
+                  </PressableScale>
+                )}
+
+                <PressableScale
+                  onPress={() => setSort((prev) => (prev === 'recent' ? 'value' : 'recent'))}
+                  scaleTo={0.92}
                   hitSlop={8}
-                  style={({ pressed }) => [styles.clearLink, pressed && styles.clearLinkPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Sorted by ${SORT_LABEL[sort]}. Tap to change.`}
+                  style={styles.textAction}
                 >
-                  <Ionicons name="refresh" size={13} color={colors.accent} />
-                  <Text style={styles.clearLinkText}>Clear filters</Text>
-                </Pressable>
-              )}
+                  <Icon name="Sort" size={14} color={colors.inkSecondary} strokeWidth={2} />
+                  <Text style={styles.textActionLabel}>Sort: {SORT_LABEL[sort]}</Text>
+                </PressableScale>
+              </View>
             </View>
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
+          <Animated.View entering={FadeInDown.duration(360).springify().damping(20)} style={styles.empty}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="search" size={22} color={colors.textMuted} />
+              <Icon name="Search" size={24} color={colors.inkTertiary} strokeWidth={1.8} />
             </View>
             <Text style={styles.emptyTitle}>No fictional demo trades match those filters.</Text>
             <Text style={styles.emptyBody}>
               Try a shorter ticker, a wider value threshold, or reset everything and start again.
             </Text>
-            <Pressable
+            <PressableScale
               onPress={clearAll}
+              scaleTo={0.95}
               accessibilityRole="button"
               accessibilityLabel="Clear search and all filters"
-              style={({ pressed }) => [styles.emptyButton, pressed && styles.emptyButtonPressed]}
+              style={styles.emptyButton}
             >
               <Text style={styles.emptyButtonText}>Clear filters</Text>
-            </Pressable>
-          </View>
+            </PressableScale>
+          </Animated.View>
         }
+      />
+
+      <FilterSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        filters={filters}
+        onChange={setFilters}
+        onReset={() => setFilters(DEFAULT_FILTERS)}
+        resultCount={results.length}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.canvas },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
   },
-  backButton: {
+  iconButton: {
     width: HIT_TARGET,
     height: HIT_TARGET,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderRadius: HIT_TARGET / 2,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.hairline,
   },
-  backButtonPressed: { backgroundColor: colors.surfaceAlt },
-  headerText: { flex: 1, minWidth: 0, gap: 2 },
-  heading: { ...typography.title, color: colors.textPrimary },
-  subheading: { fontSize: 12, fontWeight: '500', color: colors.textMuted },
+  /** Balances the back button so the title stays optically centred. */
+  iconButtonGhost: { width: HIT_TARGET, height: HIT_TARGET },
+  headerText: { flex: 1, minWidth: 0, alignItems: 'center', gap: 1 },
+  title: { ...type.title2, color: colors.ink },
+  subtitle: { ...type.caption, fontSize: 11.5, color: colors.inkTertiary },
 
-  listContent: { paddingHorizontal: spacing.md },
-  controls: { gap: spacing.md, paddingBottom: spacing.md },
+  listContent: { paddingHorizontal: spacing.lg },
+  controls: { gap: spacing.sm, paddingBottom: spacing.sm },
 
-  filterGroup: { gap: spacing.xs },
-  filterTitle: { ...typography.micro, color: colors.textMuted, letterSpacing: 1 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  filterHint: { fontSize: 11, fontWeight: '500', color: colors.textMuted },
+  quickRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
+  activeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 38,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.sunken,
+    marginLeft: 'auto',
+  },
+  filterButtonActive: { backgroundColor: colors.ink },
+  filterButtonText: { ...type.callout, color: colors.inkSecondary },
+  filterButtonTextActive: { color: '#FFFFFF' },
+  badge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.lime,
+  },
+  badgeText: { ...type.caption, fontSize: 10.5, color: colors.ink },
 
   resultBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
-  resultCount: { ...typography.body, fontWeight: '700', color: colors.textPrimary },
-  clearLink: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
-  clearLinkPressed: { opacity: 0.6 },
-  clearLinkText: { ...typography.label, color: colors.accent },
+  resultCount: { ...type.headline, color: colors.ink },
+  resultActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  textAction: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+  textActionLabel: { ...type.callout, color: colors.inkSecondary },
 
   empty: {
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.hairline,
   },
   emptyIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundLift,
+    backgroundColor: colors.sunken,
   },
-  emptyTitle: {
-    ...typography.body,
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  emptyBody: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 17,
-  },
+  emptyTitle: { ...type.title2, fontSize: 17, color: colors.ink, textAlign: 'center' },
+  emptyBody: { ...type.footnote, color: colors.inkTertiary, textAlign: 'center' },
   emptyButton: {
     marginTop: spacing.xs,
-    minHeight: 40,
+    minHeight: 44,
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    backgroundColor: colors.ink,
   },
-  emptyButtonPressed: { opacity: 0.7 },
-  emptyButtonText: { ...typography.label, color: colors.accent },
+  emptyButtonText: { ...type.callout, color: '#FFFFFF' },
 });
