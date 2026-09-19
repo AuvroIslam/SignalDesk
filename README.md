@@ -350,22 +350,28 @@ signed with a debug keystore.
 
 ## AI use disclosure
 
-> **Note for the submitting candidate:** this section must describe *your* actual process. Edit it
-> so it is accurate for you, and make sure you can explain and defend every part of the code before
-> submitting. The brief explicitly requires honesty here.
+Every tool used on this project, and what each was actually used for.
 
-I used **Claude Code (Anthropic)** as a coding assistant for this task. Its actual role was:
-reading the assignment brief into a requirements checklist, scaffolding the Expo and TypeScript
-project, drafting the screens, components, mock data, filter logic and this README, generating the
-icon set from the Heroicons package, producing the store style graphics, and driving the on device
-test session over wireless debugging. I reviewed the generated code, verified the behaviour against
-the brief's checklist on a physical device, ran the type check and the Android build, and can
-explain the structure and the design decisions.
+**Design and UX direction (mine).** I designed the UI and UX. I researched mobile patterns on
+**Mobbin** and **Dribbble**, then used **ChatGPT** to turn a written brief into a reference mockup
+of the three screens. That mockup became the visual reference I handed to Claude Code to build
+from, followed by manual tweaking of layout, colour and motion until the app felt lively rather
+than static.
 
-No project was submitted without review. All product and design decisions, including the three
-screen flow, the invented data set, the visual system, the sheet based filter model, and the choice
-to state transaction direction in text as well as colour, are documented above and in the source
-comments.
+**Implementation (Claude Code, Anthropic).** Claude Code did the heavy lifting on the codebase:
+scaffolding the Expo and TypeScript project, writing the screens, components, mock data, filter
+logic, the generated icon set and this README. I have practical React Native and Expo experience,
+having worked as a teaching assistant on the Ostad React Native Expo batch, so I guided the work,
+reviewed the output at each step and corrected it where it went in the wrong direction.
+
+**Testing (shared).** I tested the app by hand on my own Samsung Galaxy S21 FE and checked the
+behaviour against the brief's requirements myself. Claude then ran the checklist again over
+wireless debugging, capturing screenshots and reading `logcat`, and carried out the security
+review: the permission audit, the dependency audit, and the source scans for network calls,
+secrets and dynamic code execution.
+
+No AI generated work was submitted without review. I can explain the architecture, the filter
+logic and the design decisions in the submitted code.
 
 ## Deliverables
 
