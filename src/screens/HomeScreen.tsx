@@ -1,7 +1,16 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { setStatusBarStyle } from 'expo-status-bar';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -34,7 +43,29 @@ type SignalGroup = {
 
 export function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  useStatusBarStyle('light');
+
+  /**
+   * The hero is dark and the body below it is white, so a single status bar
+   * style cannot serve both. Track where the green ends and flip the bar as it
+   * scrolls past, otherwise white clock and icons sit on a white background.
+   */
+  const [heroHeight, setHeroHeight] = useState(0);
+  const [barStyle, setBarStyle] = useState<'light' | 'dark'>('light');
+  useStatusBarStyle(barStyle);
+
+  const onHeroLayout = (event: LayoutChangeEvent) =>
+    setHeroHeight(event.nativeEvent.layout.height);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (heroHeight === 0) return;
+    // Flip once the green has cleared the status bar strip.
+    const threshold = Math.max(heroHeight - insets.top - 56, 0);
+    const next = event.nativeEvent.contentOffset.y > threshold ? 'dark' : 'light';
+    if (next !== barStyle) {
+      setBarStyle(next);
+      setStatusBarStyle(next, true);
+    }
+  };
 
   /**
    * Every headline number is computed from the same local array that feeds the
@@ -85,8 +116,13 @@ export function HomeScreen({ navigation }: Props) {
       <ScrollView
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
       >
-        <View style={[styles.heroBlock, { paddingTop: insets.top + spacing.xs }]}>
+        <View
+          onLayout={onHeroLayout}
+          style={[styles.heroBlock, { paddingTop: insets.top + spacing.xs }]}
+        >
           {/* Scrolls with the page, resolving from forest green into the white
               working surface the rest of the app uses. */}
           <LinearGradient
