@@ -19,7 +19,15 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.signaldesk.demo",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.INTERNET",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
