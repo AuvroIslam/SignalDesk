@@ -46,3 +46,6 @@ export type ScreenerFilters = {
   role: RoleFilter;
   minValue: ValueFilter;
 };
+
+/** Ordering for the screener feed. */
+export type SortKey = 'recent' | 'value';
