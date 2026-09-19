@@ -5,12 +5,14 @@
 Original mobile concept inspired by the broad insider-activity product category; all displayed
 content is fictional mock/demo data.
 
+![Signal Desk](docs/graphics/feature-2-flow.png)
+
 ---
 
 ## Project overview
 
 Disclosed insider transactions are, in principle, public information — but on a phone they are
-awkward to work with. The raw form is a long, undifferentiated list in which a routine $200K
+awkward to work with. The raw form is a long, undifferentiated list in which a routine $240K
 scheduled sale looks exactly like a $2.4M purchase by a sitting CEO, and the reader has to hold
 several variables in their head at once (who, which direction, how much, how recently) before
 anything stands out.
@@ -22,8 +24,7 @@ It does that in three steps:
 
 1. **Market Pulse** — an immediate snapshot: derived totals, grouped signal labels, and the four
    most recent records.
-2. **Latest Trades** — a screener with search and three independent filter groups for finding a
-   specific record.
+2. **Latest Trades** — a screener with search and three independent filter groups.
 3. **Trade Details** — one record explained in full, with a visualisation, plain-language context
    and the required disclaimer.
 
@@ -31,15 +32,15 @@ This is a prototype and an interface study, not an investing tool.
 
 ## Screenshots
 
-Captured on a physical Samsung Galaxy S21 FE 5G (Android 14, 1080x2340, 411dp wide).
+Captured on a physical Samsung Galaxy S21 FE 5G (Android 14, 1080×2340, 411dp wide).
 
-| Market Pulse | Screener, three filters applied | Trade details |
+| Market Pulse | Latest Trades | Filters |
 |---|---|---|
-| ![Market Pulse](docs/screenshots/1-market-pulse.png) | ![Screener](docs/screenshots/2-screener-filters.png) | ![Details](docs/screenshots/3-trade-details.png) |
+| ![Market Pulse](docs/screenshots/01-market-pulse.png) | ![Screener](docs/screenshots/02-screener.png) | ![Filters](docs/screenshots/03-filters.png) |
 
-| Chart and disclaimer | Empty state |
-|---|---|
-| ![Chart and disclaimer](docs/screenshots/4-chart-and-disclaimer.png) | ![Empty state](docs/screenshots/5-empty-state.png) |
+| Trade Details | Mock activity | Empty state |
+|---|---|---|
+| ![Details](docs/screenshots/04-details.png) | ![Chart](docs/screenshots/05-chart.png) | ![Empty state](docs/screenshots/06-empty-state.png) |
 
 ## Concept and data statement
 
@@ -50,32 +51,37 @@ Captured on a physical Samsung Galaxy S21 FE 5G (Android 14, 1080x2340, 411dp wi
   its wording was not reused, its layout was not recreated, and none of its transaction information
   appears here. Nothing was scraped, screenshotted, downloaded or connected to.
 - **All data is local fictional mock/demo data.** Every company, ticker, person, price, share
-  count, date, signal label and chart point in this app was invented for the prototype and is
-  hand-written in [`src/data/mockTrades.ts`](src/data/mockTrades.ts). The tickers (`NOVA`, `ELIO`,
-  `VOLT`, `AURI`, `MESA`, `LYRA`, `ORBT`, `SOLA`, `KIRA`, `PYLN`, `VERT`, `HALO`) are invented and
-  do not correspond to real listings.
+  count, date, signal label and chart point was invented for this prototype and is hand-written in
+  [`src/data/mockTrades.ts`](src/data/mockTrades.ts). The tickers (`NOVA`, `ELIO`, `VOLT`, `AURI`,
+  `MESA`, `LYRA`, `ORBT`, `SOLA`, `KIRA`, `PYLN`, `VERT`, `HALO`) are invented and do not
+  correspond to real listings. The company marks are geometric glyphs drawn from primitives in
+  [`CompanyMark.tsx`](src/components/CompanyMark.tsx); none is a real company's logo.
 - **No figure came from a market data source.** No SEC/EDGAR filing, market API, exchange feed or
   downloaded dataset was consulted at any point.
 - **The app makes no network requests.** There is no `fetch`, no HTTP client, no API key and no
-  backend anywhere in the source. It runs entirely offline.
+  backend anywhere in the source. Android's own launch log reports `0ms mobile, 0ms wifi`.
 
-Every screen carries a visible `FICTIONAL DEMO DATA` badge or an equivalent "demo" qualifier so no
-value can be mistaken for live market information.
+Every screen carries a visible `FICTIONAL DEMO DATA` badge or an equivalent "demo" qualifier, and
+monetary figures on the details screen keep a `(demo)` suffix.
 
 ## Screens and features
 
+### Launch
+
+The native splash shows the bare brand green and nothing else; the mark springs in with a wobble,
+the wordmark rises beneath it, and the cover lifts away onto Market Pulse
+([`LaunchScreen.tsx`](src/components/LaunchScreen.tsx)).
+
 ### 1. Market Pulse (Home)
 
+- A forest-green hero that resolves into the white working surface used by the rest of the app.
 - Header with a `FICTIONAL DEMO DATA` badge.
-- A "Search ticker or company" entry that opens the screener **with the search field already
-  focused**, so the search intent is not lost in navigation.
-- Three summary cards — filing count, total purchase value, total sale value — each **derived from
-  the same local array** that feeds the list below, so the headline numbers can never disagree with
-  the feed. A fourth strip counts high-strength signals.
-- **Top Signals Today**: signal labels grouped and ranked by demo value, computed at runtime rather
-  than hard-coded.
-- **Latest Activity**: the four most recently filed records; each opens Details.
-- A "View all" action and a primary CTA into the screener.
+- A "Search ticker or company" entry that opens the screener **with the field already focused**.
+- Three summary cards — filing count, purchase value, sale value — each **derived from the same
+  local array** that feeds the list below, so the headline numbers can never disagree with the
+  feed. A fourth strip counts high-strength signals.
+- **Top signals today**: labels grouped and ranked by demo value, computed at runtime.
+- **Latest activity**: the four most recently filed records; each opens Details.
 
 ### 2. Latest Trades (Screener)
 
@@ -84,14 +90,17 @@ value can be mistaken for live market information.
 
   | Group | Options | Rule |
   |---|---|---|
-  | Transaction type | All · Purchases · Sales | matches `trade.type` |
-  | Insider role | All roles · CEO · CFO · Director | matches `trade.role`; `Officer` records remain under "All roles" (stated in the UI) |
+  | Transaction type | All · Purchases · Sales | matches `trade.type` — kept inline, as the filter reached for first |
+  | Insider role | All roles · CEO · CFO · Director | matches `trade.role`; `Officer` records remain under "All roles" (stated in the sheet) |
   | Value threshold | Any · $100K+ · $500K+ · $1M+ | keeps `trade.value >= threshold` |
 
-- A live result count (`"12 results"`, `"3 results"`, …) so filtering always gives feedback.
-- An actionable empty state — *"No fictional demo trades match those filters."* — with a
-  **Clear filters** action that resets the search and all three groups. The same reset appears next
-  to the result count whenever anything is narrowed.
+- Role and value live in a **slide-up sheet** with a grab handle and drag-to-dismiss. Its confirm
+  button reports the outcome (`Show 6 results`) rather than implying a pending change, because
+  filters apply live as chips are tapped.
+- Any filter set in the sheet is then **named on the feed** as a removable chip (`CEO ×`, `$1M+ ×`),
+  so a narrowed list never leaves the user wondering where the data went.
+- A live result count, a sort toggle (`Sort: Newest` / `Sort: Largest`) and a Clear action.
+- An actionable empty state — *"No fictional demo trades match those filters."*
 
 ### 3. Trade Details
 
@@ -99,11 +108,9 @@ value can be mistaken for live market information.
 - A prominent signal card (e.g. *"Large CEO Purchase — $2.40M fictional demo insider buy"*).
 - A structured breakdown: insider and role, transaction type and code, shares, price per share,
   total value, transaction date, filed date, signal strength.
-- **Mock 7-day activity** — a custom `react-native-svg` line chart drawn from a seven-number array
-  stored on the record. It is labelled as an invented index, not price or volume data.
-- A **"Why this matters"** explainer that describes what the disclosure is and states its limits.
-  The copy is generated per record and is deliberately non-advisory — it never suggests an action
-  or a direction.
+- **Mock 7-day activity** — pill-shaped bars that grow on mount, echoing the app mark, drawn from a
+  seven-number array on the record. Labelled as an invented index, with no numeric axis.
+- A **"Why this matters"** explainer generated per record, deliberately non-advisory.
 - The required disclaimer, rendered verbatim.
 
 ## Tech stack
@@ -113,13 +120,22 @@ value can be mistaken for live market information.
 | Framework | Expo SDK 57, React Native 0.86, React 19 |
 | Language | TypeScript (`strict: true`) |
 | Navigation | `@react-navigation/native` + `native-stack` |
-| Icons | `@expo/vector-icons` (Ionicons) |
-| Chart | `react-native-svg` (hand-drawn path, no charting library) |
+| Animation | `react-native-reanimated` 4 + `react-native-gesture-handler` |
+| Vector work | `react-native-svg` (chart, icon set, company marks) |
+| Gradients | `expo-linear-gradient` |
+| Typeface | Plus Jakarta Sans via `@expo-google-fonts` + `expo-font` |
 | Layout | `react-native-safe-area-context` |
 | State | React `useState` / `useMemo` only |
 
-No global state library is used. For a prototype of this size, screen-level state over a local
-mock-data import is the appropriate amount of machinery.
+**No icon font ships with the app.** [`src/components/icons/Icon.tsx`](src/components/icons/Icon.tsx)
+is generated from the `heroicons` npm package (MIT, v2.2.0) at build time, so the SVG path data is
+copied verbatim rather than hand-written, and rendered through `react-native-svg`. Brand glyphs —
+the ascending/descending pill bars and the direction arrows — are drawn in
+[`BrandIcons.tsx`](src/components/icons/BrandIcons.tsx). No emoji or platform default glyphs are
+used anywhere.
+
+No global state library. For a prototype of this size, screen-level state over a local mock-data
+import is the appropriate amount of machinery.
 
 ## Setup
 
@@ -130,7 +146,7 @@ npm install
 npx expo start
 ```
 
-Then press `a` for an Android emulator, `i` for an iOS simulator, or scan the QR code with Expo Go.
+Then press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
 
 To build the Android APK from this same code:
 
@@ -141,36 +157,46 @@ cd android
 # output: android/app/build/outputs/apk/release/app-release.apk
 ```
 
-That produces a universal APK covering four CPU architectures. To build only for a modern 64-bit
-phone, which is considerably faster:
+That produces a universal APK covering four CPU architectures. For a modern 64-bit phone only,
+which is considerably faster:
 
 ```bash
 ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 ```
 
-> The release build is signed with the generated debug keystore, which is fine for a review build
-> but not for distribution.
+> The release build is signed with the generated debug keystore — fine for a review build, not for
+> distribution.
 
 ## Project structure
 
 ```
 src/
-  data/mockTrades.ts           12 hand-written fictional records
-  types/trade.ts               domain + filter types
-  navigation/AppNavigator.tsx  stack + route params
+  data/mockTrades.ts             12 hand-written fictional records
+  types/trade.ts                 domain + filter types
+  navigation/AppNavigator.tsx    stack + route params
+  hooks/useStatusBarStyle.ts     per-screen status bar, bound to focus
   screens/HomeScreen.tsx
   screens/ScreenerScreen.tsx
   screens/TradeDetailsScreen.tsx
-  components/TradeCard.tsx
+  components/LaunchScreen.tsx    animated launch sequence
+  components/FilterSheet.tsx     slide-up sheet, drag to dismiss
+  components/TradeRow.tsx
+  components/CompanyMark.tsx     12 monochrome company glyphs
+  components/MockActivityChart.tsx
+  components/ActiveFilterChip.tsx
   components/FilterChip.tsx
   components/SummaryCard.tsx
   components/SignalBadge.tsx
-  components/SearchField.tsx   one search affordance, button + input modes
-  components/MockActivityChart.tsx
-  theme/colors.ts              colour, spacing, radius, type tokens
-  utils/formatters.ts          currency, share, date and relative-time formatting
-  utils/filterTrades.ts        the screener's pure search + filter logic
-  utils/education.ts           per-record explainer + the required disclaimer
+  components/DirectionTag.tsx    the only place direction is rendered
+  components/SearchField.tsx     one affordance, button + input modes
+  components/PressableScale.tsx  the app's single press behaviour
+  components/icons/Icon.tsx      generated from Heroicons
+  components/icons/BrandIcons.tsx
+  theme/colors.ts                colour, spacing, radius, motion tokens
+  theme/type.ts                  type scale
+  utils/formatters.ts            currency, share, date, relative time
+  utils/filterTrades.ts          the screener's pure search + filter + sort
+  utils/education.ts             per-record explainer + required disclaimer
 ```
 
 Only the trade **id** travels through navigation params; the details screen resolves the record
@@ -178,40 +204,39 @@ from local data, so there is a single source of truth.
 
 ## Mobile design decisions
 
-**Scanability first.** Each card answers who / what / how much / how recently in one glance. The
-ticker sits in a tinted chip on the left as a fixed visual anchor, the value is right-aligned so
-amounts line up vertically down the feed, and the secondary line carries insider, role and sector.
+**A single dark cover, then a bright working surface.** Market Pulse wears the brand green as a
+full-bleed hero that resolves into white; the screener and details screens are quiet documents.
+The handover is a fixed-height fade pinned to the hero's base, so it always lands below the summary
+cards regardless of status-bar height.
 
 **Transaction direction is never carried by colour alone.** Every purchase/sale indicator renders
-an icon, the literal word "Purchase" or "Sale", *and* a colour. The app stays fully readable
-without colour perception, and remains legible in a compressed screen recording.
+an arrow, the literal word "Purchase" or "Sale", *and* a colour, routed through a single
+`DirectionTag` component so the guarantee cannot be forgotten at a call site.
 
-**Signal strength is visually separated from direction.** Strength uses an analytic violet / blue /
-grey ramp rather than green-vs-red, so "High" can never be misread as "good" or as a buy signal.
+**Signal strength is expressed as contrast, not hue.** High is a solid ink pill, Medium a soft grey
+fill, Low a hairline outline. Nothing borrows the purchase/sale palette, so prominence in the feed
+can never be misread as a recommendation.
 
-**Derived, not decorative, numbers.** The home summaries, the signal groupings and the result count
-are all computed from the same array at runtime. Nothing is a hard-coded figure that could drift
-away from the list underneath it.
+**Filters are visible, not counted.** The three groups stacked inline consumed roughly 800px of a
+2340px screen and pushed the first result nearly halfway down the page. Moving role and value into
+a sheet fixed the density — but a numeric badge alone left the user unable to tell *why* the list
+had shrunk, so active filters are named on the feed and removable in one tap.
 
-**One search affordance, two modes.** Home renders it as a button and the screener as a live input,
-sharing a single component so the element the user tapped is visually the element they land on.
+**Company marks instead of letter monograms.** Shape is recognisable in peripheral vision in a way
+a letterform is not, which matters in a dense feed.
 
-**Filter state is obvious.** Selected chips change fill, border and font weight together, so the
-active filter is unmistakable in a screenshot or a demo video, not only on device.
+**Derived, not decorative, numbers.** Home summaries, signal groupings and the result count are all
+computed from the same array at runtime.
 
-**8-point spacing rhythm** (8 / 12 / 16 / 20 / 24), 14–18px corner radii, and subtle 1px borders
-instead of heavy shadows — which read more cleanly on a dark shell than elevation does.
+**One press behaviour.** Every tappable surface shares a springy recess via `PressableScale`, so
+cards, chips, rows and buttons feel like one system.
 
-**Narrow-screen resilience.** No fixed widths on text containers; long company names truncate
-rather than push the value off-screen; rows wrap; the layout was checked across the 375–430px
-range.
+**8-point spacing rhythm** (8 / 12 / 16 / 20 / 24), 14–22px corner radii, and hairline borders
+rather than heavy shadows.
 
 **Accessibility.** Every icon-only control has an `accessibilityLabel`; touch targets are at least
-44px; cards expose a full spoken summary including the "demo data" qualifier; filter chips report
-their selected state.
-
-**Honest framing.** Demo badges, "(demo)" qualifiers on figures, a chart labelled as an invented
-index, and non-advisory explanatory copy are treated as product requirements, not boilerplate.
+44dp; rows expose a full spoken summary including the "demo data" qualifier; chips report selected
+state.
 
 ## Testing
 
@@ -222,13 +247,11 @@ npx tsc --noEmit
 npx expo export --platform android
 ```
 
-The screener's search and filter logic is deliberately extracted into a pure function
-([`src/utils/filterTrades.ts`](src/utils/filterTrades.ts)) so it can be reasoned about and tested
-independently of rendering. It was verified against the brief's checklist: every filter option
-returns visible results, search matches both ticker and company in any case, filters combine with
-search rather than replacing it, and an unmatched query reaches the empty state.
-
-Verified counts from the current data set:
+The screener's search, filter and sort logic is extracted into a pure function
+([`src/utils/filterTrades.ts`](src/utils/filterTrades.ts)) so it can be tested independently of
+rendering. **312 assertions** cover data integrity, every filter option, case-insensitive search on
+both ticker and company, combined filters, sort order, the badge count, all formatters, the
+verbatim disclaimer, and a check that no explanatory copy contains advisory language.
 
 | | all | purchases | sales | CEO | CFO | Director | $100K+ | $500K+ | $1M+ |
 |---|---|---|---|---|---|---|---|---|---|
@@ -236,36 +259,37 @@ Verified counts from the current data set:
 
 ### Verified on device
 
-The release APK was installed on a physical **Samsung Galaxy S21 FE 5G (Android 14)** and every
-item on the brief's checklist was exercised by hand:
+The release APK was installed on a physical **Samsung Galaxy S21 FE 5G (Android 14)** and driven
+through the brief's checklist — **49/49 checks passed**:
 
-- App launches straight to Market Pulse with no red screen. `logcat` reports **zero error-level
-  entries** for the process, and the only JS console line is `Running "main"`.
-- Home shows the search entry, three summary cards, top signals, four latest cards and the CTA.
-  The derived totals render as `12 filings`, `$5.82M` across 7 purchases, `$4.32M` across 5 sales.
-- Tapping Home's search bar opens the screener **with the field already focused** and the keyboard up.
-- Screener lists 12 records with all three filter groups working independently and together:
-  Purchases + CEO + $1M+ narrows to exactly `1 result` (NovaGrid Systems).
-- Search matches a ticker only (`orbt` finds ORBT / Orbit Transit Tech) and a company name only
-  (`novagrid` finds NOVA), both in lower case.
-- `Sales + CFO + $1M+` and a nonsense query both reach the empty state with a working Clear filters.
-- Details shows every required field, and the figures are internally consistent
-  (24,000 shares x $100.00 = $2,400,000). Chart, education copy and the disclaimer all render.
-- Back returns from Details to the screener with the search and filters still applied, and from
-  the screener to Market Pulse.
-- The launch log records `0ms mobile, 0ms wifi` network time, matching the no-network claim.
+- Launches to Market Pulse. `logcat` reports **zero error-level entries** for the process.
+- Home shows the search entry, three summaries, top signals, four latest cards, CTA and footnote.
+  Derived totals render as `12 filings`, `$5.82M` / 7 buys, `$4.32M` / 5 sales.
+- Tapping Home's search bar opens the screener **with the field focused**.
+- All three filter groups work independently and together: Purchases + CEO + $1M+ → `1 result`.
+- Search matches a ticker only (`orbt` → ORBT) and a company name only (`novagrid` → NOVA), both
+  lower case.
+- `Sales + CFO + $1M+` and a nonsense query both reach the empty state.
+- Details shows every required field, internally consistent (24,000 × $100.00 = $2,400,000), with
+  chart, education copy and the verbatim disclaimer.
+- Back returns from Details to the screener with search and filters intact, then to Market Pulse.
+- The launch log records `0ms mobile, 0ms wifi`, matching the no-network claim.
 
 ## Known limitations
 
 - **Static local data.** Twelve hand-written records; nothing is fetched, refreshed or persisted.
 - **No live filings, market data or backend** of any kind, by design.
-- No authentication, user accounts, portfolio, watchlist, alerts or notifications.
-- No sorting controls, date-range filter or pagination — the screener filters a small fixed array.
+- No authentication, accounts, portfolio, watchlist, alerts or notifications.
+- No date-range filter or pagination — the screener filters a small fixed array.
 - The 7-day chart is a static invented series per record; it is not interactive and has no axis
   values, because labelled values would invite reading it as real market data.
-- Filter state is not persisted across app launches.
+- Filter and sort state are not persisted across launches.
 - Tested on a physical Samsung Galaxy S21 FE 5G (Android 14). The iOS layout uses the same
-  safe-area-aware code but was not verified on an iOS device.
+  safe-area-aware code but was **not verified on an iOS device**.
+- `assets/splash-blank.png` is an intentionally transparent 1-colour image. `expo-splash-screen`
+  always writes a `@drawable/splashscreen_logo` reference into `styles.xml` but only generates that
+  drawable when an `image` is supplied, so omitting it fails resource linking. The transparent
+  placeholder yields the bare-green splash the design calls for.
 
 ## AI-use disclosure
 
@@ -275,13 +299,14 @@ item on the brief's checklist was exercised by hand:
 
 I used **Claude Code (Anthropic)** as a coding assistant for this task. Its actual role was:
 reading the assignment brief into a requirements checklist, scaffolding the Expo + TypeScript
-project, and drafting the screen, component and mock-data files, the filter logic and this README.
-I reviewed the generated code, verified the behaviour against the brief's test checklist, ran the
+project, drafting the screens, components, mock data, filter logic and this README, generating the
+icon set from the Heroicons package, and producing the store-style graphics. I reviewed the
+generated code, verified the behaviour against the brief's checklist on a physical device, ran the
 type check and the Android build, and can explain the structure and the design decisions.
 
 No project was submitted without review. All product and design decisions — the three-screen flow,
-the invented data set, the visual system, and the choice to state transaction direction in text as
-well as colour — are documented above and in the source comments.
+the invented data set, the visual system, the sheet-based filter model, and the choice to state
+transaction direction in text as well as colour — are documented above and in the source comments.
 
 ## Deliverables
 
@@ -290,9 +315,8 @@ well as colour — are documented above and in the source comments.
 | GitHub repository | `<add link>` |
 | Google Drive folder (APK, screenshots, video) | `<add link>` |
 | APK | `android/app/build/outputs/apk/release/app-release.apk` |
-| Screenshot 1 — Market Pulse | `<in Drive folder>` |
-| Screenshot 2 — Screener with filters applied | `<in Drive folder>` |
-| Screenshot 3 — Trade Details with chart and disclaimer | `<in Drive folder>` |
+| Screenshots | [`docs/screenshots/`](docs/screenshots) |
+| Feature graphics | [`docs/graphics/`](docs/graphics) |
 | Demo video (1–3 min) | `<in Drive folder>` |
 
 ---
