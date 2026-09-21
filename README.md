@@ -397,12 +397,12 @@ logic and the design decisions in the submitted code.
 
 | Asset | Link |
 |---|---|
-| GitHub repository | `<add link>` |
-| Google Drive folder (APK, screenshots, video) | `<add link>` |
-| APK | `android/app/build/outputs/apk/release/app-release.apk` |
-| Screenshots | [`docs/screenshots/`](docs/screenshots) |
+| GitHub repository | https://github.com/AuvroIslam/SignalDesk |
+| Google Drive folder (APK, screenshots, video) | https://drive.google.com/drive/folders/10Oube0Kgs33VvSWkUHsvwGy3bv4BOOsg?usp=sharing |
+| APK | in the Drive folder, or build locally to `android/app/build/outputs/apk/release/app-release.apk` |
+| Screenshots | [`docs/screenshots/`](docs/screenshots) and in the Drive folder |
 | Feature graphics | [`docs/graphics/`](docs/graphics) |
-| Demo video (1 to 3 min) | `<in Drive folder>` |
+| Demo video (1 to 3 min) | in the Drive folder |
 
 ---
 
