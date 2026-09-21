@@ -76,7 +76,8 @@ the wordmark rises beneath it, and the cover lifts away onto Market Pulse
 
 ## Screenshots
 
-Captured on a physical Samsung Galaxy S21 FE 5G (Android 14, 1080×2340, 411dp wide).
+Captured on a physical Google Pixel 10a (Android 17, 1080×2424, 411dp wide). The app was
+tested on two devices; see Testing below.
 
 | Market Pulse | Latest Trades | Filters |
 |---|---|---|
